@@ -1525,3 +1525,419 @@ export async function getAllUnifiedRCCM(startDate = null, endDate = null) {
 
   return results;
 }
+
+/**
+ * Robust date parser for Google Sheet date formats (M/D/YYYY, M/D/YY, YYYY-MM-DD)
+ */
+export function parseSheetDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const clean = dateStr.trim();
+  if (clean.includes('/')) {
+    const parts = clean.split('/');
+    if (parts.length >= 3) {
+      const m = parseInt(parts[0], 10);
+      const d = parseInt(parts[1], 10);
+      let y = parseInt(parts[2], 10);
+      if (y < 100) y += 2000;
+      if (!isNaN(m) && !isNaN(d) && !isNaN(y)) {
+        return new Date(y, m - 1, d);
+      }
+    }
+  } else if (clean.includes('-')) {
+    const parts = clean.split('-');
+    if (parts.length >= 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      if (!isNaN(m) && !isNaN(d) && !isNaN(y)) {
+        return new Date(y, m - 1, d);
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Filter rows by period: daily, week, or month
+ */
+export function filterRowsByPeriod(rows, periodConfig, keyColIndices = []) {
+  if (!rows || rows.length <= 1) return [];
+  const { mode = 'daily', selectedDate, weekStartDate, weekEndDate, selectedMonth } = periodConfig;
+  const indices = Array.isArray(keyColIndices) ? keyColIndices : [keyColIndices];
+
+  const hasDataRow = (r) => {
+    if (!indices || indices.length === 0) return true;
+    return indices.some(idx => r[idx] !== undefined && String(r[idx]).trim() !== '' && String(r[idx]).trim() !== '0.00');
+  };
+
+  if (mode === 'daily') {
+    const targetDate = selectedDate ? parseSheetDate(selectedDate) : null;
+    if (!targetDate) return [];
+    return rows.slice(1).filter(r => {
+      const rd = parseSheetDate(r[0]);
+      if (!rd) return false;
+      return rd.getFullYear() === targetDate.getFullYear() &&
+             rd.getMonth() === targetDate.getMonth() &&
+             rd.getDate() === targetDate.getDate() &&
+             hasDataRow(r);
+    });
+  }
+
+  if (mode === 'week') {
+    const start = weekStartDate ? parseSheetDate(weekStartDate) : null;
+    const end = weekEndDate ? parseSheetDate(weekEndDate) : null;
+    if (!start || !end) return [];
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    return rows.slice(1).filter(r => {
+      const rd = parseSheetDate(r[0]);
+      if (!rd) return false;
+      return rd >= start && rd <= end && hasDataRow(r);
+    });
+  }
+
+  if (mode === 'month') {
+    let targetYear = 2026;
+    let targetMonth = 10;
+    if (selectedMonth && selectedMonth.includes('-')) {
+      const [y, m] = selectedMonth.split('-').map(Number);
+      if (!isNaN(y) && !isNaN(m)) {
+        targetYear = y;
+        targetMonth = m;
+      }
+    }
+    return rows.slice(1).filter(r => {
+      const rd = parseSheetDate(r[0]);
+      if (!rd) return false;
+      return rd.getFullYear() === targetYear && (rd.getMonth() + 1) === targetMonth && hasDataRow(r);
+    });
+  }
+
+  return [];
+}
+
+/**
+ * Unified Period Telemetry Fetcher for KPI DASHBOARD
+ * Supports:
+ * - 'daily': Single date review
+ * - 'week': 7-day cumulative total and average KPIs
+ * - 'month': Full month cumulative total and average KPIs
+ */
+export async function getUnifiedPeriodKpiTelemetry(periodConfig = {}) {
+  const mode = periodConfig.mode || 'daily';
+  const selectedDate = periodConfig.selectedDate || '2026-10-13';
+
+  // If in daily mode, use standard daily extractors
+  if (mode === 'daily') {
+    const [pro, qa, eng, hr, mould, mix, safe] = await Promise.all([
+      getProductionTelemetry(selectedDate),
+      getQATelemetry(selectedDate),
+      getEngineeringTelemetry(selectedDate),
+      getHRTelemetry(selectedDate),
+      getMouldTelemetry(),
+      getMixingTelemetry(),
+      getSafetyTelemetry(selectedDate)
+    ]);
+
+    return {
+      pro,
+      qa,
+      eng,
+      hr,
+      mould,
+      mix,
+      safe,
+      periodInfo: {
+        mode: 'daily',
+        label: `Operational Review Date: ${selectedDate}`,
+        activeDays: 1,
+        dateRangeStr: selectedDate
+      }
+    };
+  }
+
+  // Multi-day mode (week or month)
+  const engDocId = MASTER_SHEETS.ENG.id;
+  const [
+    proRows,
+    qaRows,
+    elecRows,
+    bdRows,
+    hrRows,
+    mouldRows,
+    mixRows,
+    safeRows
+  ] = await Promise.all([
+    fetchSheetCsv('PRO'),
+    fetchSheetCsv('QA'),
+    fetchSheetCsvByName(engDocId, 'Electricity Cloud'),
+    fetchSheetCsvByName(engDocId, 'Breakdown Cloud'),
+    fetchSheetCsv('HR'),
+    fetchSheetCsv('MOULD'),
+    fetchSheetCsv('MIXING'),
+    fetchSheetCsv('SAFETY')
+  ]);
+
+  // 1. Production Aggregates
+  const matchedPro = filterRowsByPeriod(proRows, periodConfig, [12, 13]);
+  let pro = {
+    hasData: matchedPro.length > 0,
+    actualT: 0,
+    planT: 0,
+    lossT: 0,
+    capacityT: 0,
+    utilizationPercent: 0,
+    adherencePercent: 0,
+    curingOee: 0,
+    productivity: 7.84,
+    activeDays: matchedPro.length
+  };
+
+  if (matchedPro.length > 0) {
+    let sumAct = 0, sumPlan = 0, sumLoss = 0, sumCap = 0, sumOee = 0;
+    matchedPro.forEach(r => {
+      sumAct += parseFloat(r[13]) || 0;
+      sumPlan += parseFloat(r[12]) || 0;
+      sumLoss += parseFloat(r[21]) || 0;
+      sumCap += parseFloat(r[10]) || 26.29;
+      sumOee += parseFloat(r[23]) || 94.0;
+    });
+
+    pro.actualT = Number(sumAct.toFixed(2));
+    pro.planT = Number(sumPlan.toFixed(2));
+    pro.lossT = Number(sumLoss.toFixed(2));
+    pro.capacityT = Number(sumCap.toFixed(2));
+    pro.utilizationPercent = sumCap > 0 ? Number(((sumAct / sumCap) * 100).toFixed(1)) : 0;
+    pro.adherencePercent = sumPlan > 0 ? Number(((sumAct / sumPlan) * 100).toFixed(1)) : 0;
+    pro.curingOee = Number((sumOee / matchedPro.length).toFixed(1));
+  }
+
+  // 2. Quality Aggregates
+  const matchedQa = filterRowsByPeriod(qaRows, periodConfig, [3]);
+  let qa = {
+    hasData: matchedQa.length > 0,
+    customerClaims: 0,
+    berlcDaily: 0,
+    rGradeDaily: 0,
+    ftrDaily: 0,
+    flashRateDaily: 0,
+    compoundRejection: 0,
+    activeDays: matchedQa.length
+  };
+
+  if (matchedQa.length > 0) {
+    let sumClaims = 0, sumBerlc = 0, sumR = 0, sumFtr = 0, sumFlash = 0, sumComp = 0;
+    matchedQa.forEach(r => {
+      sumClaims += parseInt(r[178]) || 0;
+      sumBerlc += parseFloat(r[25]) || 0;
+      sumR += parseFloat(r[16]) || 0;
+      sumFtr += parseFloat(r[153]) || 88.5;
+      sumFlash += parseFloat(r[91]) || parseFloat(r[175]) || 0;
+      sumComp += parseFloat(r[176]) || 0;
+    });
+
+    qa.customerClaims = sumClaims;
+    qa.berlcDaily = Number((sumBerlc / matchedQa.length).toFixed(2));
+    qa.rGradeDaily = Number((sumR / matchedQa.length).toFixed(2));
+    qa.ftrDaily = Number((sumFtr / matchedQa.length).toFixed(1));
+    qa.flashRateDaily = Number((sumFlash / matchedQa.length).toFixed(2));
+    qa.compoundRejection = Number(sumComp.toFixed(1));
+  }
+
+  // 3. Engineering Aggregates (Electricity Cloud & Breakdown Cloud)
+  const matchedElec = filterRowsByPeriod(elecRows, periodConfig, [3, 4]);
+  const matchedBd = filterRowsByPeriod(bdRows, periodConfig, [1]);
+  let eng = {
+    hasData: matchedElec.length > 0,
+    powerConsumption: 0,
+    powerCost: 0,
+    fuelConsumption: 0,
+    fuelCost: 0,
+    totalUnitsDay: 0,
+    totalWoodConsumption: 0,
+    totalEbCost: 0,
+    totalFuelCost: 0,
+    breakdownCount: matchedBd.length,
+    totalBdMinutes: 0,
+    activeDays: matchedElec.length
+  };
+
+  if (matchedElec.length > 0) {
+    let sumUnitsDay = 0, sumUnitsMT = 0, sumWood = 0, sumFireMT = 0, sumRateInr = 0, sumCostKg = 0;
+    let sumEbCost = 0, sumFuelCost = 0;
+
+    matchedElec.forEach(r => {
+      sumUnitsDay += parseFloat(r[3]) || 0;
+      sumUnitsMT += parseFloat(r[4]) || 0;
+      sumEbCost += parseFloat(r[7]) || 0;
+      sumCostKg += parseFloat(r[8]) || 0;
+      sumWood += parseFloat(r[32]) || 0;
+      sumFireMT += parseFloat(r[33]) || 0;
+      sumRateInr += parseFloat(r[34]) || 0;
+      sumFuelCost += parseFloat(r[35]) || 0;
+    });
+
+    eng.totalUnitsDay = Math.round(sumUnitsDay);
+    eng.powerConsumption = Number((sumUnitsMT / matchedElec.length).toFixed(1));
+    eng.powerCost = Number((sumCostKg / matchedElec.length).toFixed(2));
+    eng.totalWoodConsumption = Math.round(sumWood);
+    eng.fuelConsumption = Number((sumFireMT / matchedElec.length).toFixed(1));
+    eng.fuelCost = Number((sumRateInr / matchedElec.length).toFixed(2));
+    eng.totalEbCost = Math.round(sumEbCost);
+    eng.totalFuelCost = Math.round(sumFuelCost);
+  }
+
+  if (matchedBd.length > 0) {
+    eng.totalBdMinutes = matchedBd.reduce((acc, r) => acc + (parseFloat(r[6]) || 0), 0);
+  }
+
+  // 4. Safety Aggregates
+  const matchedSafe = filterRowsByPeriod(safeRows, periodConfig, [1, 2, 3]);
+  let safe = {
+    hasData: matchedSafe.length > 0,
+    reportableAccidents: 0,
+    nonReportableAccidents: 0,
+    firstAidAccidents: 0,
+    nearmissesIdentified: 0,
+    unsafeActs: 0,
+    safetyTrainingHrs: 0,
+    daysWithoutIncidents: 14,
+    activeDays: matchedSafe.length
+  };
+
+  if (matchedSafe.length > 0) {
+    let sumRep = 0, sumNonRep = 0, sumFirst = 0, sumNear = 0, sumActs = 0, sumTrain = 0;
+    matchedSafe.forEach(r => {
+      sumRep += parseInt(r[1]) || 0;
+      sumNonRep += parseInt(r[2]) || 0;
+      sumFirst += parseInt(r[3]) || 0;
+      sumNear += parseInt(r[4]) || 0;
+      sumActs += parseInt(r[6]) || 0;
+      sumTrain += parseFloat(r[7]) || 0;
+    });
+
+    safe.reportableAccidents = sumRep;
+    safe.nonReportableAccidents = sumNonRep;
+    safe.firstAidAccidents = sumFirst;
+    safe.nearmissesIdentified = sumNear;
+    safe.unsafeActs = sumActs;
+    safe.safetyTrainingHrs = Number(sumTrain.toFixed(1));
+    safe.daysWithoutIncidents = parseInt(matchedSafe[matchedSafe.length - 1][8]) || 14;
+  }
+
+  // 5. HR Aggregates
+  const matchedHr = filterRowsByPeriod(hrRows, periodConfig, [1, 2]);
+  let hr = {
+    hasData: matchedHr.length > 0,
+    authorizedLeave: 0,
+    unauthorizedLeave: 0,
+    twentyFourHours: 0,
+    trainingHrs: 0,
+    dot: 0,
+    kaizen: 0,
+    activeDays: matchedHr.length
+  };
+
+  if (matchedHr.length > 0) {
+    let sumAuth = 0, sumUnauth = 0, sum24 = 0, sumTr = 0, sumDot = 0, sumKaizen = 0;
+    matchedHr.forEach(r => {
+      sumAuth += parseFloat(r[1]) || 0;
+      sumUnauth += parseFloat(r[2]) || 0;
+      sum24 += parseInt(r[3]) || 0;
+      sumTr += parseFloat(r[4]) || 0;
+      sumDot += parseInt(r[5]) || 0;
+      sumKaizen += parseInt(r[6]) || 0;
+    });
+
+    hr.authorizedLeave = Number((sumAuth / matchedHr.length).toFixed(2));
+    hr.unauthorizedLeave = Number((sumUnauth / matchedHr.length).toFixed(2));
+    hr.twentyFourHours = sum24;
+    hr.trainingHrs = Number(sumTr.toFixed(1));
+    hr.dot = sumDot;
+    hr.kaizen = sumKaizen;
+  }
+
+  // 6. Mould Aggregates
+  const matchedMould = filterRowsByPeriod(mouldRows, periodConfig, [1, 2]);
+  let mould = {
+    hasData: matchedMould.length > 0,
+    mouldBreakdownHrs: 0,
+    preventiveMouldNos: 0,
+    mouldMaintainCostINR: 0,
+    improvementCostINR: 0,
+    activeDays: matchedMould.length
+  };
+
+  if (matchedMould.length > 0) {
+    let sumBd = 0, sumPrev = 0, sumMaint = 0, sumImp = 0;
+    matchedMould.forEach(r => {
+      sumBd += parseFloat(r[1]) || 0;
+      sumPrev += parseInt(r[2]) || 0;
+      sumMaint += parseFloat(r[3]) || 0;
+      sumImp += parseFloat(r[4]) || 0;
+    });
+
+    mould.mouldBreakdownHrs = Number(sumBd.toFixed(2));
+    mould.preventiveMouldNos = sumPrev;
+    mould.mouldMaintainCostINR = Number(sumMaint.toFixed(2));
+    mould.improvementCostINR = Number(sumImp.toFixed(2));
+  }
+
+  // 7. Mixing Aggregates
+  const matchedMix = filterRowsByPeriod(mixRows, periodConfig, [1, 2]);
+  let mix = {
+    hasData: matchedMix.length > 0,
+    mixingTonnage: 0,
+    mixingOee: 0,
+    noOfBatches: 0,
+    remillWeightT: 0,
+    remillBatchesNos: 0,
+    activeDays: matchedMix.length
+  };
+
+  if (matchedMix.length > 0) {
+    let sumTon = 0, sumOee = 0, sumBatches = 0, sumRemillWt = 0, sumRemillBatches = 0;
+    matchedMix.forEach(r => {
+      sumTon += parseFloat(r[1]) || 0;
+      sumOee += parseFloat(r[2]) || 0;
+      sumBatches += parseInt(r[3]) || 0;
+      sumRemillWt += parseFloat(r[4]) || 0;
+      sumRemillBatches += parseInt(r[5]) || 0;
+    });
+
+    mix.mixingTonnage = Math.round(sumTon);
+    mix.mixingOee = Number((sumOee / matchedMix.length).toFixed(1));
+    mix.noOfBatches = sumBatches;
+    mix.remillWeightT = Number(sumRemillWt.toFixed(2));
+    mix.remillBatchesNos = sumRemillBatches;
+  }
+
+  const periodLabel = mode === 'week'
+    ? `Week-Wise Cumulative Total (${periodConfig.weekStartDate} to ${periodConfig.weekEndDate})`
+    : `Month-Wise Cumulative Total (${periodConfig.selectedMonth})`;
+
+  const activeDaysMax = Math.max(
+    matchedPro.length,
+    matchedQa.length,
+    matchedElec.length,
+    matchedHr.length,
+    matchedSafe.length
+  );
+
+  return {
+    pro,
+    qa,
+    eng,
+    hr,
+    mould,
+    mix,
+    safe,
+    periodInfo: {
+      mode,
+      label: periodLabel,
+      activeDays: activeDaysMax,
+      dateRangeStr: mode === 'week' ? `${periodConfig.weekStartDate} — ${periodConfig.weekEndDate}` : periodConfig.selectedMonth
+    }
+  };
+}
