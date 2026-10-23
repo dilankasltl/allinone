@@ -241,7 +241,7 @@ export default function DrmReviewMatrix({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-sky-400 uppercase tracking-widest">Daily Review Matrix (DRM)</span>
+              <span className="text-xs font-bold text-sky-400 uppercase tracking-widest">KPI DASHBOARD</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
                 Live Factory Telemetry
               </span>
@@ -403,7 +403,7 @@ export default function DrmReviewMatrix({
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-6 bg-sky-500 rounded-sm"></div>
             <h2 className={`text-lg font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              OPERATIONAL DEPARTMENT TELEMETRY MATRIX (DRM)
+              OPERATIONAL DEPARTMENT KPI DASHBOARD
             </h2>
           </div>
           <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>

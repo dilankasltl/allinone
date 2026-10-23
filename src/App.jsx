@@ -126,7 +126,7 @@ export default function App() {
                 </span>
               </div>
               <h1 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <span>Daily Review Matrix (DRM)</span>
+                <span>KPI DASHBOARD</span>
                 <span className="text-xs font-mono font-medium text-slate-400 hidden sm:inline">| Executive Scorecard</span>
               </h1>
             </div>
@@ -226,7 +226,7 @@ export default function App() {
             TVS
           </div>
           <span className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-            Sundaram Lanka Tyres Limited — Daily Review Matrix (DRM)
+            Sundaram Lanka Tyres Limited — KPI DASHBOARD
           </span>
         </div>
         <div className="flex items-center gap-4 text-[11px] font-medium font-mono">
