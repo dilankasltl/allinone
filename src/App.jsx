@@ -130,42 +130,42 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-200 font-sans ${
       isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     }`}>
-      {/* Top Corporate Command Header */}
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-md shadow-sm transition-colors ${
-        isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'
+      {/* Top Corporate Command Header - Ultra-compact 1-Page Layout */}
+      <header className={`sticky top-0 z-40 border-b backdrop-blur-md shadow-xs transition-colors ${
+        isDark ? 'bg-slate-950/90 border-slate-800' : 'bg-white/90 border-slate-200'
       }`}>
-        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-5 py-1.5 flex flex-wrap items-center justify-between gap-2.5">
           {/* Logo & Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-sky-500/20">
-              <span className="text-sm font-mono tracking-tighter">SLTL</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-white shadow-md shadow-sky-500/20">
+              <span className="text-xs font-mono tracking-tighter">SLTL</span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-sky-400 tracking-widest uppercase">
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">
                   SUN-TWS • TVS Group
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                  Live Sheets Connected
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                  Live
                 </span>
               </div>
-              <h1 className="text-lg font-black tracking-tight flex items-center gap-2">
+              <h1 className="text-sm font-black tracking-tight flex items-center gap-1.5 mt-0.5">
                 <span>KPI DASHBOARD</span>
-                <span className="text-xs font-mono font-medium text-slate-400 hidden sm:inline">| Operations Matrix</span>
+                <span className="text-[11px] font-mono font-medium text-slate-400 hidden sm:inline">| Operations Matrix</span>
               </h1>
             </div>
           </div>
 
           {/* Mode Switcher: Daily vs Week-Wise vs Month-Wise */}
-          <div className={`p-1 rounded-xl border flex items-center gap-1 text-xs font-bold ${
+          <div className={`p-0.5 rounded-lg border flex items-center gap-0.5 text-xs font-bold ${
             isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
           }`}>
             <button
               onClick={() => setViewMode('daily')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
                 viewMode === 'daily'
-                  ? 'bg-sky-600 text-white shadow-sm'
+                  ? 'bg-sky-600 text-white shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -173,9 +173,9 @@ export default function App() {
             </button>
             <button
               onClick={() => setViewMode('week')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
                 viewMode === 'week'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-indigo-600 text-white shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -183,9 +183,9 @@ export default function App() {
             </button>
             <button
               onClick={() => setViewMode('month')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
                 viewMode === 'month'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -328,13 +328,13 @@ export default function App() {
             <button
               onClick={() => setShowTopSummary(prev => !prev)}
               title={showTopSummary ? "Hide Global KPI Summary" : "Show Global KPI Summary"}
-              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+              className={`p-1.5 px-2.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
                 showTopSummary
                   ? (isDark ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-sky-50 text-sky-700 border-sky-300')
                   : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200' : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-600')
               }`}
             >
-              {showTopSummary ? <EyeOff size={14} /> : <Eye size={14} />}
+              {showTopSummary ? <EyeOff size={13} /> : <Eye size={13} />}
               <span className="hidden md:inline font-mono text-[11px]">
                 {showTopSummary ? 'Hide Summary' : 'Summary'}
               </span>
@@ -345,11 +345,11 @@ export default function App() {
               onClick={loadTelemetry}
               disabled={loading}
               title="Refresh Telemetry"
-              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+              className={`p-1.5 px-2.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
                 isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300' : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-700'
               }`}
             >
-              <RefreshCw size={14} className={`${loading ? 'animate-spin text-sky-400' : ''}`} />
+              <RefreshCw size={13} className={`${loading ? 'animate-spin text-sky-400' : ''}`} />
               <span className="hidden md:inline font-mono text-[11px]">
                 {lastSyncTime ? lastSyncTime : 'Sync'}
               </span>
@@ -359,18 +359,18 @@ export default function App() {
             <button
               onClick={toggleTheme}
               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                 isDark ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
               }`}
             >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Single Page Content */}
-      <main className="max-w-[1560px] mx-auto px-4 sm:px-6 py-6">
+      {/* Main Single Page Content - Compact 1-Screen View */}
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-5 py-2">
         <DrmReviewMatrix
           proData={proData}
           qaData={qaData}
@@ -388,19 +388,19 @@ export default function App() {
         />
       </main>
 
-      {/* Corporate Global Footer */}
-      <footer className={`border-t py-4 px-6 text-center text-xs flex flex-wrap items-center justify-between gap-4 max-w-[1560px] mx-auto w-full transition-colors ${
+      {/* Corporate Global Footer - Sleek single line */}
+      <footer className={`border-t py-1.5 px-4 text-center text-[10px] flex flex-wrap items-center justify-between gap-2 max-w-[1600px] mx-auto w-full transition-colors ${
         isDark ? 'bg-slate-950 border-slate-900 text-slate-500' : 'bg-white border-slate-200 text-slate-600'
       }`}>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-[#003399] text-white font-bold flex items-center justify-center text-[9px]">
+          <div className="w-4 h-4 rounded bg-[#003399] text-white font-bold flex items-center justify-center text-[8px]">
             TVS
           </div>
           <span className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
             Sundaram Lanka Tyres Limited — KPI DASHBOARD ({viewMode === 'week' ? 'Week-Wise Total Mode' : viewMode === 'month' ? 'Month-Wise Total Mode' : 'Daily Review Mode'})
           </span>
         </div>
-        <div className="flex items-center gap-4 text-[11px] font-medium font-mono">
+        <div className="flex items-center gap-3 text-[10px] font-medium font-mono">
           <span>Continuous Live Telemetry</span>
           <span>•</span>
           <span>7 Factory Divisions</span>
