@@ -15,7 +15,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Filter
+  Filter,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import DrmReviewMatrix from './components/DrmReviewMatrix';
 import { getUnifiedPeriodKpiTelemetry } from './services/liveSheetsEngine';
@@ -65,6 +67,9 @@ export default function App() {
 
   const [theme, setTheme] = useState(() => localStorage.getItem('sltl_drm_theme') || 'dark');
   const isDark = theme === 'dark';
+
+  // Toggle state to hide top 6 Global KPI cards by default
+  const [showTopSummary, setShowTopSummary] = useState(false);
 
   // Telemetry data states
   const [proData, setProData] = useState(null);
@@ -319,6 +324,22 @@ export default function App() {
               </>
             )}
 
+            {/* Summary Toggle Button */}
+            <button
+              onClick={() => setShowTopSummary(prev => !prev)}
+              title={showTopSummary ? "Hide Global KPI Summary" : "Show Global KPI Summary"}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+                showTopSummary
+                  ? (isDark ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-sky-50 text-sky-700 border-sky-300')
+                  : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200' : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-600')
+              }`}
+            >
+              {showTopSummary ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span className="hidden md:inline font-mono text-[11px]">
+                {showTopSummary ? 'Hide Summary' : 'Summary'}
+              </span>
+            </button>
+
             {/* Refresh Button */}
             <button
               onClick={loadTelemetry}
@@ -362,6 +383,8 @@ export default function App() {
           selectedDate={selectedDate}
           viewMode={viewMode}
           periodInfo={periodInfo}
+          showTopSummary={showTopSummary}
+          onToggleTopSummary={() => setShowTopSummary(prev => !prev)}
         />
       </main>
 

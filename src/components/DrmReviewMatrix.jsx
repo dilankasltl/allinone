@@ -13,7 +13,11 @@ import {
   Calendar,
   Clock,
   Flame,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export default function DrmReviewMatrix({
@@ -27,8 +31,20 @@ export default function DrmReviewMatrix({
   theme = 'dark',
   selectedDate = '2026-10-13',
   viewMode = 'daily', // 'daily' | 'week' | 'month'
-  periodInfo = null
+  periodInfo = null,
+  showTopSummary: controlledShowTopSummary,
+  onToggleTopSummary
 }) {
+  const [internalShowTopSummary, setInternalShowTopSummary] = React.useState(false);
+  const showTopSummary = controlledShowTopSummary !== undefined ? controlledShowTopSummary : internalShowTopSummary;
+  const handleToggleSummary = () => {
+    if (onToggleTopSummary) {
+      onToggleTopSummary();
+    } else {
+      setInternalShowTopSummary(prev => !prev);
+    }
+  };
+
   const isDark = theme === 'dark';
   const cardBg = isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200';
   const subText = isDark ? 'text-slate-400' : 'text-slate-600';
@@ -463,194 +479,258 @@ export default function DrmReviewMatrix({
 
   return (
     <div className="space-y-6">
-      {/* Active Date / Period Banner for KPI DASHBOARD */}
-      <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${cardBg}`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black border ${
-            viewMode === 'month'
-              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-              : viewMode === 'week'
-              ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-              : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
-          }`}>
-            <Calendar size={20} />
+      {/* Compact Header Bar when Top Summary is Hidden (Default) */}
+      {!showTopSummary ? (
+        <div className={`p-3.5 px-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 shadow-md transition-all ${cardBg}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold border ${
+              viewMode === 'month'
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                : viewMode === 'week'
+                ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+            }`}>
+              <Calendar size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-sky-400 uppercase tracking-widest">KPI DASHBOARD</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                  Live Factory Feed
+                </span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border uppercase ${
+                  viewMode === 'month'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : viewMode === 'week'
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                }`}>
+                  {viewMode === 'week' ? 'Week-Wise' : viewMode === 'month' ? 'Month-Wise' : 'Daily Date'}
+                </span>
+              </div>
+              <h1 className="text-sm font-black tracking-wide">
+                {viewMode === 'daily' ? (
+                  <>Operational Review Date: <span className="text-sky-400 font-mono">{selectedDate || 'Active Log'}</span></>
+                ) : viewMode === 'week' ? (
+                  <>Week Period: <span className="text-indigo-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Week'}</span> ({periodInfo?.activeDays || 0} Days Active)</>
+                ) : (
+                  <>Month Period: <span className="text-emerald-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Month'}</span> ({periodInfo?.activeDays || 0} Days Active)</>
+                )}
+              </h1>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-sky-400 uppercase tracking-widest">KPI DASHBOARD</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                Live Factory Telemetry
-              </span>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border uppercase ${
+
+          <button
+            onClick={handleToggleSummary}
+            className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/40 transition-all cursor-pointer shadow-sm"
+          >
+            <Eye size={14} />
+            <span>View Global KPI Summary (6 Metrics)</span>
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      ) : (
+        /* Full Expanded Top Banner & 6 Dedicated KPI Cards */
+        <div className="space-y-4 transition-all">
+          {/* Active Date / Period Banner for KPI DASHBOARD with Hide Toggle */}
+          <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${cardBg}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black border ${
                 viewMode === 'month'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                   : viewMode === 'week'
-                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                  : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                  ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                  : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
               }`}>
-                {viewMode === 'week' ? 'Week-Wise Totals' : viewMode === 'month' ? 'Month-Wise Totals' : 'Daily Single Date'}
-              </span>
+                <Calendar size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-sky-400 uppercase tracking-widest">KPI DASHBOARD</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                    Live Factory Telemetry
+                  </span>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border uppercase ${
+                    viewMode === 'month'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : viewMode === 'week'
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                      : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                  }`}>
+                    {viewMode === 'week' ? 'Week-Wise Totals' : viewMode === 'month' ? 'Month-Wise Totals' : 'Daily Single Date'}
+                  </span>
+                </div>
+                <h1 className="text-base font-black tracking-wide">
+                  {viewMode === 'daily' ? (
+                    <>Operational Review Date: <span className="text-sky-400 font-mono">{selectedDate || 'Active Log'}</span></>
+                  ) : viewMode === 'week' ? (
+                    <>Week-Wise Period: <span className="text-indigo-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Week'}</span></>
+                  ) : (
+                    <>Month-Wise Period: <span className="text-emerald-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Month'}</span></>
+                  )}
+                </h1>
+              </div>
             </div>
-            <h1 className="text-base font-black tracking-wide">
-              {viewMode === 'daily' ? (
-                <>Operational Review Date: <span className="text-sky-400 font-mono">{selectedDate || 'Active Log'}</span></>
-              ) : viewMode === 'week' ? (
-                <>Week-Wise Period: <span className="text-indigo-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Week'}</span></>
-              ) : (
-                <>Month-Wise Period: <span className="text-emerald-400 font-mono">{periodInfo?.dateRangeStr || 'Selected Month'}</span></>
-              )}
-            </h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className={`px-3 py-1.5 rounded-xl border font-mono font-bold ${
-            isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
-          }`}>
-            {viewMode === 'daily'
-              ? 'Shifts: Shift (Day) & Shift (Night)'
-              : `${periodInfo?.activeDays || 0} Operational Days Calculated`}
-          </span>
-        </div>
-      </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className={`px-3 py-1.5 rounded-xl border font-mono font-bold ${
+                isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
+              }`}>
+                {viewMode === 'daily'
+                  ? 'Shifts: Shift (Day) & Shift (Night)'
+                  : `${periodInfo?.activeDays || 0} Operational Days Calculated`}
+              </span>
 
-      {/* Top Global Telemetry Banner (6 Dedicated KPI Boxes) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {/* Card 1: Output Tonnage */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className={subText}>{isMultiDay ? `Production [${periodTag}]` : 'Production Output'}</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <button
+                onClick={handleToggleSummary}
+                className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all cursor-pointer"
+              >
+                <EyeOff size={14} />
+                <span>Hide Summary</span>
+                <ChevronUp size={14} />
+              </button>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {renderKpiVal(pro.actualT, ' T')}
-              </span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${subText}`}>/ {renderKpiVal(pro.planT, ' T Plan')}</div>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-emerald-500 font-bold flex items-center gap-1 text-[11px]">
-              <TrendingUp size={12} /> {renderKpiVal(pro.adherencePercent, '% Adh')}
-            </span>
-            <span className="text-slate-400 text-[10px] font-mono">Cap: {renderKpiVal(pro.capacityT, 'T')}</span>
-          </div>
-        </div>
 
-        {/* Card 2: Plant Utilization */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className={subText}>{isMultiDay ? `Utilization (${periodAvgTag})` : 'Plant Utilization'}</span>
-              <Activity size={14} className="text-emerald-500" />
+          {/* Top Global Telemetry Banner (6 Dedicated KPI Boxes) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            {/* Card 1: Output Tonnage */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className={subText}>{isMultiDay ? `Production [${periodTag}]` : 'Production Output'}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {renderKpiVal(pro.actualT, ' T')}
+                  </span>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${subText}`}>/ {renderKpiVal(pro.planT, ' T Plan')}</div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-emerald-500 font-bold flex items-center gap-1 text-[11px]">
+                  <TrendingUp size={12} /> {renderKpiVal(pro.adherencePercent, '% Adh')}
+                </span>
+                <span className="text-slate-400 text-[10px] font-mono">Cap: {renderKpiVal(pro.capacityT, 'T')}</span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {renderKpiVal(pro.utilizationPercent, '%', 1)}
-              </span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${subText}`}>Target 85%</div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-emerald-500 font-bold text-[11px]">
-              {isPopulated(pro.utilizationPercent) && pro.utilizationPercent >= 80 ? 'Optimal Run' : 'Available Cap'}
-            </span>
-            <span className="text-slate-400 text-[10px] font-mono">OEE: {renderKpiVal(pro.curingOee, '%')}</span>
-          </div>
-        </div>
 
-        {/* Card 3: Quality First Time Right */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className="text-cyan-400 font-bold flex items-center gap-1">
-                <CheckCircle2 size={13} /> {isMultiDay ? `FTR % (${periodAvgTag})` : 'First Time Right (FTR)'}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold">
-                &ge; 90%
-              </span>
+            {/* Card 2: Plant Utilization */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className={subText}>{isMultiDay ? `Utilization (${periodAvgTag})` : 'Plant Utilization'}</span>
+                  <Activity size={14} className="text-emerald-500" />
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {renderKpiVal(pro.utilizationPercent, '%', 1)}
+                  </span>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${subText}`}>Target 85%</div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-emerald-500 font-bold text-[11px]">
+                  {isPopulated(pro.utilizationPercent) && pro.utilizationPercent >= 80 ? 'Optimal Run' : 'Available Cap'}
+                </span>
+                <span className="text-slate-400 text-[10px] font-mono">OEE: {renderKpiVal(pro.curingOee, '%')}</span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-2xl font-black text-cyan-500 tracking-tight">
-                {renderKpiVal(qa.ftrDaily, '%', 1)}
-              </span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${subText}`}>Standard Spec</div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-cyan-400 font-bold text-[11px]">Quality Spec</span>
-            <span className="text-slate-400 text-[10px] font-mono">BERLC: {renderKpiVal(qa.berlcDaily, '%', 2)}</span>
-          </div>
-        </div>
 
-        {/* Card 4: Customer Complaints */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <Sparkles size={13} /> {isMultiDay ? `Complaints [${periodTag}]` : 'Customer Complaints'}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">
-                Target 0
-              </span>
+            {/* Card 3: Quality First Time Right */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className="text-cyan-400 font-bold flex items-center gap-1">
+                    <CheckCircle2 size={13} /> {isMultiDay ? `FTR % (${periodAvgTag})` : 'First Time Right (FTR)'}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold">
+                    &ge; 90%
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-2xl font-black text-cyan-500 tracking-tight">
+                    {renderKpiVal(qa.ftrDaily, '%', 1)}
+                  </span>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${subText}`}>Standard Spec</div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-cyan-400 font-bold text-[11px]">Quality Spec</span>
+                <span className="text-slate-400 text-[10px] font-mono">BERLC: {renderKpiVal(qa.berlcDaily, '%', 2)}</span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-2xl font-black tracking-tight text-emerald-400">
-                {renderKpiVal(qa.customerClaims, ' NOS')}
-              </span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${subText}`}>Zero Customer Claims</div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-emerald-400 font-bold text-[11px]">
-              {isPopulated(qa.customerClaims) && qa.customerClaims === 0 ? 'Zero Claims' : 'Active Action'}
-            </span>
-            <span className="text-slate-400 text-[10px] font-mono">Flash: {renderKpiVal(qa.flashRateDaily, '%')}</span>
-          </div>
-        </div>
 
-        {/* Card 5: Energy & Power */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className={subText}>{isMultiDay ? `Power Cons. (${periodAvgTag})` : 'Power Consumption'}</span>
-              <Zap size={14} className="text-amber-500" />
+            {/* Card 4: Customer Complaints */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <Sparkles size={13} /> {isMultiDay ? `Complaints [${periodTag}]` : 'Customer Complaints'}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">
+                    Target 0
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-2xl font-black tracking-tight text-emerald-400">
+                    {renderKpiVal(qa.customerClaims, ' NOS')}
+                  </span>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${subText}`}>Zero Customer Claims</div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-emerald-400 font-bold text-[11px]">
+                  {isPopulated(qa.customerClaims) && qa.customerClaims === 0 ? 'Zero Claims' : 'Active Action'}
+                </span>
+                <span className="text-slate-400 text-[10px] font-mono">Flash: {renderKpiVal(qa.flashRateDaily, '%')}</span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {renderKpiVal(eng.powerConsumption, ' Kwh/MT')}
-              </span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${subText}`}>
-              {isMultiDay && eng.totalUnitsDay ? `Total: ${eng.totalUnitsDay.toLocaleString()} kWh` : 'Target 360 Kwh/MT'}
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-emerald-500 font-bold text-[11px]">Cost: {renderKpiVal(eng.powerCost, ' INR/Kg')}</span>
-            <span className="text-slate-400 text-[10px] font-mono">Fuel: {renderKpiVal(eng.fuelConsumption)}</span>
-          </div>
-        </div>
 
-        {/* Card 6: Safety Zero Harm */}
-        <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
-          <div>
-            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-              <span className={subText}>{isMultiDay ? `Incidents [${periodTag}]` : 'Incident-Free Days'}</span>
-              <ShieldCheck size={14} className="text-purple-500" />
+            {/* Card 5: Energy & Power */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className={subText}>{isMultiDay ? `Power Cons. (${periodAvgTag})` : 'Power Consumption'}</span>
+                  <Zap size={14} className="text-amber-500" />
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {renderKpiVal(eng.powerConsumption, ' Kwh/MT')}
+                  </span>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${subText}`}>
+                  {isMultiDay && eng.totalUnitsDay ? `Total: ${eng.totalUnitsDay.toLocaleString()} kWh` : 'Target 360 Kwh/MT'}
+                </div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-emerald-500 font-bold text-[11px]">Cost: {renderKpiVal(eng.powerCost, ' INR/Kg')}</span>
+                <span className="text-slate-400 text-[10px] font-mono">Fuel: {renderKpiVal(eng.fuelConsumption)}</span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-2xl font-black tracking-tight text-purple-400">
-                {renderKpiVal(safe.daysWithoutIncidents, ' Days')}
-              </span>
+
+            {/* Card 6: Safety Zero Harm */}
+            <div className={`p-4 rounded-2xl border shadow-lg relative overflow-hidden transition-all flex flex-col justify-between ${cardBg}`}>
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                  <span className={subText}>{isMultiDay ? `Incidents [${periodTag}]` : 'Incident-Free Days'}</span>
+                  <ShieldCheck size={14} className="text-purple-500" />
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-2xl font-black tracking-tight text-purple-400">
+                    {renderKpiVal(safe.daysWithoutIncidents, ' Days')}
+                  </span>
+                </div>
+                <div className="text-[11px] mt-0.5 text-purple-400 font-bold">Zero Harm</div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
+                <span className="text-emerald-500 font-bold text-[11px]">{renderKpiVal(safe.reportableAccidents, ' Reportable')}</span>
+                <span className="text-slate-400 text-[10px] font-mono">Hazards: {renderKpiVal(safe.nearmissesIdentified)}</span>
+              </div>
             </div>
-            <div className="text-[11px] mt-0.5 text-purple-400 font-bold">Zero Harm</div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/60 text-xs flex items-center justify-between">
-            <span className="text-emerald-500 font-bold text-[11px]">{renderKpiVal(safe.reportableAccidents, ' Reportable')}</span>
-            <span className="text-slate-400 text-[10px] font-mono">Hazards: {renderKpiVal(safe.nearmissesIdentified)}</span>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 7 Core Department Command Telemetry Cards */}
       <div className="space-y-5">
