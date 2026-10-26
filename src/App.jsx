@@ -134,7 +134,7 @@ export default function App() {
       <header className={`sticky top-0 z-40 border-b backdrop-blur-md shadow-sm transition-colors ${
         isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-sky-500/20">
@@ -370,7 +370,7 @@ export default function App() {
       </header>
 
       {/* Main Single Page Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-[1560px] mx-auto px-4 sm:px-6 py-6">
         <DrmReviewMatrix
           proData={proData}
           qaData={qaData}
@@ -389,7 +389,7 @@ export default function App() {
       </main>
 
       {/* Corporate Global Footer */}
-      <footer className={`border-t py-4 px-6 text-center text-xs flex flex-wrap items-center justify-between gap-4 max-w-7xl mx-auto w-full transition-colors ${
+      <footer className={`border-t py-4 px-6 text-center text-xs flex flex-wrap items-center justify-between gap-4 max-w-[1560px] mx-auto w-full transition-colors ${
         isDark ? 'bg-slate-950 border-slate-900 text-slate-500' : 'bg-white border-slate-200 text-slate-600'
       }`}>
         <div className="flex items-center gap-2">

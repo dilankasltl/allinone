@@ -17,7 +17,9 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  List,
+  LayoutGrid
 } from 'lucide-react';
 
 export default function DrmReviewMatrix({
@@ -44,6 +46,9 @@ export default function DrmReviewMatrix({
       setInternalShowTopSummary(prev => !prev);
     }
   };
+
+  // Layout mode for Department sections: 'rows' (default, single horizontal line per department) | 'grid'
+  const [layoutMode, setLayoutMode] = React.useState('rows');
 
   const isDark = theme === 'dark';
   const cardBg = isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200';
@@ -285,6 +290,20 @@ export default function DrmReviewMatrix({
           target: '4.08 INR',
           status: isPopulated(eng.powerCost) ? 'good' : 'neutral',
           rawValue: eng.powerCost
+        },
+        {
+          label: isMultiDay ? `Total Units [${periodTag}]` : 'Total Units (Day)',
+          value: renderKpiVal(eng.totalUnitsDay, ' kWh'),
+          target: '5,500 kWh',
+          status: isPopulated(eng.totalUnitsDay) ? 'good' : 'neutral',
+          rawValue: eng.totalUnitsDay
+        },
+        {
+          label: isMultiDay ? `Wood Cons. [${periodTag}]` : 'Wood Consumption',
+          value: renderKpiVal(eng.totalWoodConsumption, ' Kg'),
+          target: '14,000 Kg',
+          status: isPopulated(eng.totalWoodConsumption) ? 'good' : 'neutral',
+          rawValue: eng.totalWoodConsumption
         }
       ]
     },
@@ -733,36 +752,68 @@ export default function DrmReviewMatrix({
       )}
 
       {/* 7 Core Department Command Telemetry Cards */}
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-6 bg-sky-500 rounded-sm"></div>
-            <h2 className={`text-lg font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h2 className={`text-base sm:text-lg font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
               OPERATIONAL DEPARTMENT KPI DASHBOARD
             </h2>
           </div>
-          <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Live Synchronized Feeds (PRO, QA, ENG, SAFETY, HR, MOULD, MIXING)
-          </span>
+
+          <div className="flex items-center gap-2.5">
+            {/* View Mode Toggle: Row View (Default) vs Grid View */}
+            <div className={`p-1 rounded-xl border flex items-center gap-1 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('rows')}
+                title="Single Horizontal Row per Department"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  layoutMode === 'rows'
+                    ? (isDark ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'bg-white text-sky-700 border border-sky-200 shadow-sm')
+                    : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
+                }`}
+              >
+                <List size={13} />
+                <span>Row View (පේළි අනුව)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('grid')}
+                title="Card Grid View"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  layoutMode === 'grid'
+                    ? (isDark ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'bg-white text-sky-700 border border-sky-200 shadow-sm')
+                    : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
+                }`}
+              >
+                <LayoutGrid size={13} />
+                <span>Grid View</span>
+              </button>
+            </div>
+
+            <span className={`hidden md:inline text-xs font-mono font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              7 Factory Divisions
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {departmentSections.map((dept) => (
-            <div
-              key={dept.id}
-              className={`rounded-2xl border p-5 shadow-xl flex flex-col justify-between transition-all hover:border-sky-500/40 ${
-                isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
-              }`}
-            >
-              <div>
-                {/* Section Header */}
-                <div className={`flex items-center justify-between pb-3 mb-4 border-b ${
-                  isDark ? 'border-slate-800/60' : 'border-slate-100'
-                }`}>
+        {layoutMode === 'rows' ? (
+          /* Single Horizontal Row View (Requested: "peliyen peliyata deepnko.. ehtkota lesi") */
+          <div className="space-y-3">
+            {departmentSections.map((dept) => (
+              <div
+                key={dept.id}
+                className={`rounded-2xl border p-3.5 sm:p-4 shadow-lg transition-all hover:border-sky-500/50 flex flex-col xl:flex-row xl:items-center gap-3 sm:gap-4 ${cardBg}`}
+              >
+                {/* Department Identity (Left side) */}
+                <div className={`xl:w-64 flex-shrink-0 flex xl:flex-col justify-between xl:justify-center items-start gap-1 pb-2.5 xl:pb-0 border-b xl:border-b-0 xl:border-r ${isDark ? 'border-slate-800' : 'border-slate-200'} xl:pr-4`}>
                   <div className="flex items-center gap-2.5">
-                    {dept.icon}
+                    <div className={`p-2 rounded-xl ${dept.accentBg} border ${dept.accentBorder} flex-shrink-0`}>
+                      {dept.icon}
+                    </div>
                     <div>
-                      <h3 className={`font-black text-sm uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <h3 className={`font-black text-sm uppercase tracking-wide leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {dept.title}
                       </h3>
                       {dept.officer && (
@@ -772,75 +823,167 @@ export default function DrmReviewMatrix({
                       )}
                     </div>
                   </div>
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${dept.accentBorder} ${
-                    isDark ? 'text-slate-300 bg-slate-950/60' : 'text-slate-700 bg-slate-100'
-                  }`}>
-                    {dept.badge}
-                  </span>
+                  <div className="mt-1 xl:mt-2 flex items-center gap-2">
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${dept.accentBorder} ${
+                      isDark ? 'text-slate-300 bg-slate-950/70' : 'text-slate-700 bg-slate-100'
+                    }`}>
+                      {dept.badge}
+                    </span>
+                    <span className="hidden xl:inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Live Feed
+                    </span>
+                  </div>
                 </div>
 
-                {/* KPI Metrics Grid for this department */}
-                <div className="grid grid-cols-2 gap-2.5">
+                {/* Right Side: Horizontal KPI Capsules */}
+                <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-flow-col xl:auto-cols-fr gap-2 sm:gap-2.5">
                   {dept.kpis.map((kpi, idx) => (
                     <div
                       key={idx}
-                      className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                        isDark ? 'bg-slate-950/70 border-slate-800/80' : 'bg-slate-50 border-slate-200/80'
+                      className={`p-2.5 sm:p-3 rounded-xl border flex flex-col justify-between min-h-[76px] transition-all hover:scale-[1.01] ${
+                        isDark ? 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700' : 'bg-slate-50 border-slate-200/90 hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-bold truncate max-w-[110px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-[10px] font-bold truncate ${isDark ? 'text-slate-400' : 'text-slate-600'}`} title={kpi.label}>
                           {kpi.label}
                         </span>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           kpi.status === 'good'
-                            ? 'bg-emerald-400'
+                            ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]'
                             : kpi.status === 'warning'
-                            ? 'bg-amber-400'
+                            ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]'
                             : kpi.status === 'bad'
-                            ? 'bg-rose-500'
+                            ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]'
                             : 'bg-slate-500'
                         }`}></span>
                       </div>
 
-                      <div className="flex items-baseline justify-between mt-1.5">
-                        <span className={`font-black text-sm font-mono tracking-tight ${
+                      <div className="mt-1.5">
+                        <div className={`font-black text-sm sm:text-base font-mono tracking-tight ${
                           !isPopulated(kpi.rawValue)
-                            ? (isDark ? 'text-slate-400' : 'text-slate-500')
+                            ? (isDark ? 'text-slate-500' : 'text-slate-400')
                             : kpi.status === 'good'
                             ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
                             : kpi.status === 'warning'
                             ? (isDark ? 'text-amber-400' : 'text-amber-700')
                             : kpi.status === 'bad'
                             ? (isDark ? 'text-rose-400' : 'text-rose-600')
-                            : (isDark ? 'text-slate-200' : 'text-slate-800')
+                            : (isDark ? 'text-white' : 'text-slate-900')
                         }`}>
                           {kpi.value}
-                        </span>
-                        <span className={`text-[9px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                          T: {kpi.target}
-                        </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] font-mono mt-0.5">
+                          <span className={isDark ? 'text-slate-500' : 'text-slate-500'}>
+                            T: {kpi.target}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          /* Grid View Mode */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {departmentSections.map((dept) => (
+              <div
+                key={dept.id}
+                className={`rounded-2xl border p-5 shadow-xl flex flex-col justify-between transition-all hover:border-sky-500/40 ${
+                  isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
+                }`}
+              >
+                <div>
+                  {/* Section Header */}
+                  <div className={`flex items-center justify-between pb-3 mb-4 border-b ${
+                    isDark ? 'border-slate-800/60' : 'border-slate-100'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      {dept.icon}
+                      <div>
+                        <h3 className={`font-black text-sm uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {dept.title}
+                        </h3>
+                        {dept.officer && (
+                          <div className={`text-[10px] font-mono font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            Officer: {dept.officer}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${dept.accentBorder} ${
+                      isDark ? 'text-slate-300 bg-slate-950/60' : 'text-slate-700 bg-slate-100'
+                    }`}>
+                      {dept.badge}
+                    </span>
+                  </div>
 
-              {/* Status Footer */}
-              <div className={`mt-4 pt-3 border-t flex items-center justify-between text-[11px] ${
-                isDark ? 'border-slate-800/60 text-slate-500' : 'border-slate-100 text-slate-500'
-              }`}>
-                <span className="flex items-center gap-1 font-mono text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  {isMultiDay ? `${periodTag} Calculated` : 'Live Connected'}
-                </span>
-                <span className="font-mono text-[10px] font-semibold text-sky-400">
-                  SLTL Operations
-                </span>
+                  {/* KPI Metrics Grid for this department */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {dept.kpis.map((kpi, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          isDark ? 'bg-slate-950/70 border-slate-800/80' : 'bg-slate-50 border-slate-200/80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-bold truncate max-w-[110px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {kpi.label}
+                          </span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            kpi.status === 'good'
+                              ? 'bg-emerald-400'
+                              : kpi.status === 'warning'
+                              ? 'bg-amber-400'
+                              : kpi.status === 'bad'
+                              ? 'bg-rose-500'
+                              : 'bg-slate-500'
+                          }`}></span>
+                        </div>
+
+                        <div className="flex items-baseline justify-between mt-1.5">
+                          <span className={`font-black text-sm font-mono tracking-tight ${
+                            !isPopulated(kpi.rawValue)
+                              ? (isDark ? 'text-slate-400' : 'text-slate-500')
+                              : kpi.status === 'good'
+                              ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
+                              : kpi.status === 'warning'
+                              ? (isDark ? 'text-amber-400' : 'text-amber-700')
+                              : kpi.status === 'bad'
+                              ? (isDark ? 'text-rose-400' : 'text-rose-600')
+                              : (isDark ? 'text-slate-200' : 'text-slate-800')
+                          }`}>
+                            {kpi.value}
+                          </span>
+                          <span className={`text-[9px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                            T: {kpi.target}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Footer */}
+                <div className={`mt-4 pt-3 border-t flex items-center justify-between text-[11px] ${
+                  isDark ? 'border-slate-800/60 text-slate-500' : 'border-slate-100 text-slate-500'
+                }`}>
+                  <span className="flex items-center gap-1 font-mono text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    {isMultiDay ? `${periodTag} Calculated` : 'Live Connected'}
+                  </span>
+                  <span className="font-mono text-[10px] font-semibold text-sky-400">
+                    SLTL Operations
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
