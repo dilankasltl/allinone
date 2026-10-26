@@ -19,7 +19,9 @@ import {
   ChevronDown,
   ChevronUp,
   List,
-  LayoutGrid
+  LayoutGrid,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 export default function DrmReviewMatrix({
@@ -80,6 +82,67 @@ export default function DrmReviewMatrix({
       return `${formatted}${suffix}`;
     }
     return `${val}${suffix}`;
+  };
+
+  // Helper to determine arrow direction & color by comparing Value vs Target (T)
+  const renderKpiArrow = (kpi) => {
+    if (!kpi || !isPopulated(kpi.rawValue)) return null;
+
+    // Parse numeric value of current metric
+    const rawNum = typeof kpi.rawValue === 'number' 
+      ? kpi.rawValue 
+      : parseFloat(String(kpi.rawValue).replace(/[^0-9.-]/g, ''));
+    if (isNaN(rawNum)) return null;
+
+    // Parse numeric value of Target (T)
+    const targetNum = typeof kpi.target === 'number'
+      ? kpi.target
+      : parseFloat(String(kpi.target).replace(/[^0-9.-]/g, ''));
+
+    // Check if metric is inverse (where lower is better): Loss, Complaints, BERLC, R-Grade, Flash, Rejection, Accidents, Nearmiss, Unsafe, Leave, Breakdown, Cost, Remill
+    const labelLower = String(kpi.label || '').toLowerCase();
+    const isInverse = 
+      labelLower.includes('loss') ||
+      labelLower.includes('complaint') ||
+      labelLower.includes('berlc') ||
+      labelLower.includes('r grade') ||
+      labelLower.includes('flash') ||
+      labelLower.includes('rejection') ||
+      labelLower.includes('accident') ||
+      labelLower.includes('nearmiss') ||
+      labelLower.includes('unsafe') ||
+      labelLower.includes('leave') ||
+      labelLower.includes('breakdown') ||
+      labelLower.includes('cost') ||
+      labelLower.includes('remill');
+
+    let isUp = true;
+
+    if (!isNaN(targetNum)) {
+      if (isInverse) {
+        // Lower is better: at or below target is success (Green Up)
+        isUp = rawNum <= targetNum;
+      } else {
+        // Higher is better (e.g. Plant Utilization %): Value >= Target is Green Up! Value < Target is Red Down!
+        isUp = rawNum >= targetNum;
+      }
+    } else {
+      isUp = kpi.status === 'good';
+    }
+
+    if (isUp) {
+      return (
+        <span className="inline-flex items-center text-emerald-400 font-bold" title="Target Met / Ahead">
+          <ArrowUp size={11} className="stroke-[3.5]" />
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center text-rose-500 font-bold" title="Behind Target">
+          <ArrowDown size={11} className="stroke-[3.5]" />
+        </span>
+      );
+    }
   };
 
   // Fallbacks if data is loading
@@ -617,10 +680,11 @@ export default function DrmReviewMatrix({
                   <span className={subText}>{isMultiDay ? `Production [${periodTag}]` : 'Production Output'}</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {renderKpiVal(pro.actualT, ' T')}
                   </span>
+                  {renderKpiArrow({ rawValue: pro.actualT, target: pro.planT, label: 'Production Output' })}
                 </div>
                 <div className={`text-[11px] mt-0.5 ${subText}`}>/ {renderKpiVal(pro.planT, ' T Plan')}</div>
               </div>
@@ -639,10 +703,11 @@ export default function DrmReviewMatrix({
                   <span className={subText}>{isMultiDay ? `Utilization (${periodAvgTag})` : 'Plant Utilization'}</span>
                   <Activity size={14} className="text-emerald-500" />
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {renderKpiVal(pro.utilizationPercent, '%', 1)}
                   </span>
+                  {renderKpiArrow({ rawValue: pro.utilizationPercent, target: 85, label: 'Plant Utilization' })}
                 </div>
                 <div className={`text-[11px] mt-0.5 ${subText}`}>Target 85%</div>
               </div>
@@ -665,10 +730,11 @@ export default function DrmReviewMatrix({
                     &ge; 90%
                   </span>
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-2xl font-black text-cyan-500 tracking-tight">
                     {renderKpiVal(qa.ftrDaily, '%', 1)}
                   </span>
+                  {renderKpiArrow({ rawValue: qa.ftrDaily, target: 90, label: 'First Time Right' })}
                 </div>
                 <div className={`text-[11px] mt-0.5 ${subText}`}>Standard Spec</div>
               </div>
@@ -689,10 +755,11 @@ export default function DrmReviewMatrix({
                     Target 0
                   </span>
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-2xl font-black tracking-tight text-emerald-400">
                     {renderKpiVal(qa.customerClaims, ' NOS')}
                   </span>
+                  {renderKpiArrow({ rawValue: qa.customerClaims, target: 0, label: 'Customer Complaints' })}
                 </div>
                 <div className={`text-[11px] mt-0.5 ${subText}`}>Zero Customer Claims</div>
               </div>
@@ -711,10 +778,11 @@ export default function DrmReviewMatrix({
                   <span className={subText}>{isMultiDay ? `Power Cons. (${periodAvgTag})` : 'Power Consumption'}</span>
                   <Zap size={14} className="text-amber-500" />
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {renderKpiVal(eng.powerConsumption, ' Kwh/MT')}
                   </span>
+                  {renderKpiArrow({ rawValue: eng.powerConsumption, target: 360, label: 'Power Consumption' })}
                 </div>
                 <div className={`text-[11px] mt-0.5 ${subText}`}>
                   {isMultiDay && eng.totalUnitsDay ? `Total: ${eng.totalUnitsDay.toLocaleString()} kWh` : 'Target 360 Kwh/MT'}
@@ -733,10 +801,11 @@ export default function DrmReviewMatrix({
                   <span className={subText}>{isMultiDay ? `Incidents [${periodTag}]` : 'Incident-Free Days'}</span>
                   <ShieldCheck size={14} className="text-purple-500" />
                 </div>
-                <div className="flex items-baseline gap-1 mt-1">
+                <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-2xl font-black tracking-tight text-purple-400">
                     {renderKpiVal(safe.daysWithoutIncidents, ' Days')}
                   </span>
+                  {renderKpiArrow({ rawValue: safe.daysWithoutIncidents, target: 0, label: 'Incident-Free Days' })}
                 </div>
                 <div className="text-[11px] mt-0.5 text-purple-400 font-bold">Zero Harm</div>
               </div>
@@ -853,19 +922,22 @@ export default function DrmReviewMatrix({
                       </div>
 
                       <div className="flex items-baseline justify-between gap-1 mt-0.5">
-                        <span className={`font-black text-xs sm:text-sm font-mono tracking-tight leading-none ${
-                          !isPopulated(kpi.rawValue)
-                            ? (isDark ? 'text-slate-500' : 'text-slate-400')
-                            : kpi.status === 'good'
-                            ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
-                            : kpi.status === 'warning'
-                            ? (isDark ? 'text-amber-400' : 'text-amber-700')
-                            : kpi.status === 'bad'
-                            ? (isDark ? 'text-rose-400' : 'text-rose-600')
-                            : (isDark ? 'text-white' : 'text-slate-900')
-                        }`}>
-                          {kpi.value}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`font-black text-xs sm:text-sm font-mono tracking-tight leading-none ${
+                            !isPopulated(kpi.rawValue)
+                              ? (isDark ? 'text-slate-500' : 'text-slate-400')
+                              : kpi.status === 'good'
+                              ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
+                              : kpi.status === 'warning'
+                              ? (isDark ? 'text-amber-400' : 'text-amber-700')
+                              : kpi.status === 'bad'
+                              ? (isDark ? 'text-rose-400' : 'text-rose-600')
+                              : (isDark ? 'text-white' : 'text-slate-900')
+                          }`}>
+                            {kpi.value}
+                          </span>
+                          {renderKpiArrow(kpi)}
+                        </div>
                         <span className={`text-[9px] font-mono leading-none ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                           T:{kpi.target}
                         </span>
@@ -936,19 +1008,22 @@ export default function DrmReviewMatrix({
                         </div>
 
                         <div className="flex items-baseline justify-between mt-1.5">
-                          <span className={`font-black text-sm font-mono tracking-tight ${
-                            !isPopulated(kpi.rawValue)
-                              ? (isDark ? 'text-slate-400' : 'text-slate-500')
-                              : kpi.status === 'good'
-                              ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
-                              : kpi.status === 'warning'
-                              ? (isDark ? 'text-amber-400' : 'text-amber-700')
-                              : kpi.status === 'bad'
-                              ? (isDark ? 'text-rose-400' : 'text-rose-600')
-                              : (isDark ? 'text-slate-200' : 'text-slate-800')
-                          }`}>
-                            {kpi.value}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className={`font-black text-sm font-mono tracking-tight ${
+                              !isPopulated(kpi.rawValue)
+                                ? (isDark ? 'text-slate-400' : 'text-slate-500')
+                                : kpi.status === 'good'
+                                ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
+                                : kpi.status === 'warning'
+                                ? (isDark ? 'text-amber-400' : 'text-amber-700')
+                                : kpi.status === 'bad'
+                                ? (isDark ? 'text-rose-400' : 'text-rose-600')
+                                : (isDark ? 'text-slate-200' : 'text-slate-800')
+                            }`}>
+                              {kpi.value}
+                            </span>
+                            {renderKpiArrow(kpi)}
+                          </div>
                           <span className={`text-[9px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                             T: {kpi.target}
                           </span>
