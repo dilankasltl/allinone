@@ -1752,6 +1752,7 @@ export async function getUnifiedPeriodKpiTelemetry(periodConfig = {}) {
     hasData: matchedElec.length > 0,
     powerConsumption: 0,
     powerCost: 0,
+    energyCostPerKg: 0,
     fuelConsumption: 0,
     fuelCost: 0,
     totalUnitsDay: 0,
@@ -1781,6 +1782,7 @@ export async function getUnifiedPeriodKpiTelemetry(periodConfig = {}) {
     eng.totalUnitsDay = Math.round(sumUnitsDay);
     eng.powerConsumption = Number((sumUnitsMT / matchedElec.length).toFixed(1));
     eng.powerCost = Number((sumCostKg / matchedElec.length).toFixed(2));
+    eng.energyCostPerKg = Number((sumCostKg / matchedElec.length).toFixed(2));
     eng.totalWoodConsumption = Math.round(sumWood);
     eng.fuelConsumption = Number((sumFireMT / matchedElec.length).toFixed(1));
     eng.fuelCost = Number((sumRateInr / matchedElec.length).toFixed(2));

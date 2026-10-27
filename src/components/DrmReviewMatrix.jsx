@@ -21,7 +21,8 @@ import {
   List,
   LayoutGrid,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Coins
 } from 'lucide-react';
 
 export default function DrmReviewMatrix({
@@ -206,6 +207,7 @@ export default function DrmReviewMatrix({
     fuelCost: 1.96,
     powerConsumption: 333,
     powerCost: 2.0,
+    energyCostPerKg: 19.81,
     totalUnitsDay: 5640,
     totalWoodConsumption: 13780
   };
@@ -215,7 +217,6 @@ export default function DrmReviewMatrix({
     {
       id: 'production',
       title: 'Production Telemetry',
-      officer: 'Mr. Ravimal',
       icon: <Layers size={18} className="text-sky-400" />,
       accentBorder: 'border-sky-500/30',
       accentBg: isDark ? 'bg-sky-950/20' : 'bg-sky-50/60',
@@ -320,7 +321,6 @@ export default function DrmReviewMatrix({
     {
       id: 'engineering',
       title: 'Engineering & Utilities',
-      officer: 'Mr. Shemba',
       icon: <Zap size={18} className="text-amber-400" />,
       accentBorder: 'border-amber-500/30',
       accentBg: isDark ? 'bg-amber-950/20' : 'bg-amber-50/60',
@@ -334,25 +334,11 @@ export default function DrmReviewMatrix({
           rawValue: eng.fuelConsumption
         },
         {
-          label: isMultiDay ? `Fuel Rate (${periodAvgTag})` : 'Fuel Cost (INR)',
-          value: renderKpiVal(eng.fuelCost, ' INR/Kg'),
-          target: '3.20 INR',
-          status: isPopulated(eng.fuelCost) ? 'good' : 'neutral',
-          rawValue: eng.fuelCost
-        },
-        {
           label: isMultiDay ? `Power Cons. (${periodAvgTag})` : 'Power Consumption',
           value: renderKpiVal(eng.powerConsumption, ' Kwh/MT'),
           target: '360 Kwh/MT',
           status: isPopulated(eng.powerConsumption) ? (eng.powerConsumption <= 360 ? 'good' : 'warning') : 'neutral',
           rawValue: eng.powerConsumption
-        },
-        {
-          label: isMultiDay ? `Power Cost (${periodAvgTag})` : 'Power Cost (INR)',
-          value: renderKpiVal(eng.powerCost, ' INR/Kg'),
-          target: '4.08 INR',
-          status: isPopulated(eng.powerCost) ? 'good' : 'neutral',
-          rawValue: eng.powerCost
         },
         {
           label: isMultiDay ? `Total Units [${periodTag}]` : 'Total Units (Day)',
@@ -495,65 +481,60 @@ export default function DrmReviewMatrix({
           target: '2',
           status: isPopulated(mould.preventiveMouldNos) ? 'good' : 'neutral',
           rawValue: mould.preventiveMouldNos
+        }
+      ]
+    },
+    {
+      id: 'cost_consumption',
+      title: 'Cost Consumption',
+      icon: <Coins size={18} className="text-emerald-400" />,
+      accentBorder: 'border-emerald-500/30',
+      accentBg: isDark ? 'bg-emerald-950/20' : 'bg-emerald-50/60',
+      badge: isMultiDay ? `${periodTag} (COST)` : 'COST Cloud',
+      kpis: [
+        {
+          label: isMultiDay ? `Fuel Cost (${periodAvgTag})` : 'Fuel Cost (INR)',
+          value: renderKpiVal(eng.fuelCost, ' INR/Kg'),
+          target: '3.20 INR',
+          status: isPopulated(eng.fuelCost) ? (eng.fuelCost <= 3.20 ? 'good' : 'neutral') : 'neutral',
+          rawValue: eng.fuelCost
         },
         {
-          label: isMultiDay ? `Maintain Cost [${periodTag}]` : 'Mould Maintain Cost (INR)',
+          label: isMultiDay ? `Power Cost (${periodAvgTag})` : 'Power Cost (INR)',
+          value: renderKpiVal(eng.powerCost, ' INR/Kg'),
+          target: '4.08 INR',
+          status: isPopulated(eng.powerCost) ? (eng.powerCost <= 4.08 ? 'good' : 'neutral') : 'neutral',
+          rawValue: eng.powerCost
+        },
+        {
+          label: isMultiDay ? `Mould Cost [${periodTag}]` : 'Mould Maintain Cost (INR)',
           value: renderKpiVal(mould.mouldMaintainCostINR, ' INR'),
-          target: '0.5 INR',
-          status: isPopulated(mould.mouldMaintainCostINR) ? 'good' : 'neutral',
+          target: '0.50 INR',
+          status: isPopulated(mould.mouldMaintainCostINR) ? (mould.mouldMaintainCostINR <= 0.50 ? 'good' : 'neutral') : 'neutral',
           rawValue: mould.mouldMaintainCostINR
         },
         {
           label: isMultiDay ? `Improve Cost [${periodTag}]` : 'Improvement Cost (INR)',
           value: renderKpiVal(mould.improvementCostINR, ' INR'),
           target: '1.03 INR',
-          status: isPopulated(mould.improvementCostINR) ? 'good' : 'neutral',
+          status: isPopulated(mould.improvementCostINR) ? (mould.improvementCostINR <= 1.03 ? 'good' : 'neutral') : 'neutral',
           rawValue: mould.improvementCostINR
-        }
-      ]
-    },
-    {
-      id: 'mixing',
-      title: 'Compound Mixing',
-      icon: <Cpu size={18} className="text-teal-400" />,
-      accentBorder: 'border-teal-500/30',
-      accentBg: isDark ? 'bg-teal-950/20' : 'bg-teal-50/60',
-      badge: isMultiDay ? `${periodTag} (MIXING)` : 'MIXING Cloud',
-      kpis: [
-        {
-          label: isMultiDay ? `Mixing Tonnage [${periodTag}]` : 'Mixing Tonnage',
-          value: renderKpiVal(mixing.mixingTonnage, ' T'),
-          target: '8000 T',
-          status: isPopulated(mixing.mixingTonnage) ? 'good' : 'neutral',
-          rawValue: mixing.mixingTonnage
         },
         {
-          label: isMultiDay ? `Mixing OEE % (${periodAvgTag})` : 'Mixing OEE %',
-          value: renderKpiVal(mixing.mixingOee, '%'),
-          target: '80.0%',
-          status: isPopulated(mixing.mixingOee) ? 'good' : 'neutral',
-          rawValue: mixing.mixingOee
-        },
-        {
-          label: isMultiDay ? `No of Batches [${periodTag}]` : 'No of Batches',
-          value: renderKpiVal(mixing.noOfBatches),
-          target: '120',
-          status: isPopulated(mixing.noOfBatches) ? 'good' : 'neutral',
-          rawValue: mixing.noOfBatches
-        },
-        {
-          label: isMultiDay ? `Remill Weight [${periodTag}]` : 'Remill Weight (T)',
-          value: renderKpiVal(mixing.remillWeightT, ' T'),
-          target: '2.5 T',
-          status: isPopulated(mixing.remillWeightT) ? 'good' : 'neutral',
-          rawValue: mixing.remillWeightT
-        },
-        {
-          label: isMultiDay ? `Remill Batches [${periodTag}]` : 'Remill Batches (NOS)',
-          value: renderKpiVal(mixing.remillBatchesNos),
-          target: '40',
-          status: isPopulated(mixing.remillBatchesNos) ? 'good' : 'neutral',
-          rawValue: mixing.remillBatchesNos
+          label: isMultiDay ? `Energy Cost/kg (${periodAvgTag})` : 'Energy Cost /kg',
+          value: renderKpiVal(
+            eng.energyCostPerKg !== undefined && eng.energyCostPerKg !== null
+              ? eng.energyCostPerKg
+              : eng.powerCost,
+            ' INR/Kg'
+          ),
+          target: '20.00 INR',
+          status: isPopulated(eng.energyCostPerKg)
+            ? (eng.energyCostPerKg <= 20.0 ? 'good' : 'warning')
+            : 'neutral',
+          rawValue: eng.energyCostPerKg !== undefined && eng.energyCostPerKg !== null
+            ? eng.energyCostPerKg
+            : eng.powerCost
         }
       ]
     }
